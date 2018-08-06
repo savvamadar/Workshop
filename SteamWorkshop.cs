@@ -69,12 +69,6 @@ public class SteamWorkshop : MonoBehaviour
         RemoteStorageGetPublishedFileDetailsResult = CallResult<RemoteStorageGetPublishedFileDetailsResult_t>.Create(OnRemoteStorageGetPublishedFileDetailsResult);
         RemoteStorageDownloadUGCResult = CallResult<RemoteStorageDownloadUGCResult_t>.Create(OnRemoteStorageDownloadUGCResult);
         RemoteStorageUnsubscribePublishedFileResult = CallResult<RemoteStorageUnsubscribePublishedFileResult_t>.Create(OnRemoteStorageUnsubscribePublishedFileResult);
-        
-		//if (Application.loadedLevel == 0)
-        //{
-			//when enabled this method is called to attempt to fetch the latest version of your subscribed content
-            GetSubscribedItems();
-        //}
     }
 
     private void OnItemUpdateResult(SubmitItemUpdateResult_t pCallback, bool bIOFailure)
