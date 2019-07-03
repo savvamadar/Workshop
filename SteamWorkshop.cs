@@ -13,8 +13,7 @@ using System;
 /*   Usage: Call SaveToWorkshop with the correct arguments to upload a file and a thumbnail to the steam workshop.
             SaveToWorkshop(string fileName, string fileData, string workshopTitle, string workshopDescription, string[] tags, string imageLoc);
 			
-			string fileName = the file name it will be saved as. When someone downloads the item this is the file they will download. Extension optional, doesn't need to match
-			local file name if uploading local file.
+			string fileName = the file name it will be saved as. When someone downloads the item this is the file they will download. Extension optional, doesn't need to match local file name if uploading local file.
 			string fileData = the file contents.
 			string workshopTitle = the title that the item will appear under.
 			string workshopDescription = the description of the item.
@@ -32,16 +31,16 @@ using System;
 public class SteamWorkshop : MonoBehaviour
 {
     public static SteamWorkshop singleton;
-	//whether or not current item has finished downloading
-	public bool fetchedContent;
-	//the contents of the downloaded item
-	private string itemContent;
-	//the name of the last file that was uploaded
+    //whether or not current item has finished downloading
+    public bool fetchedContent;
+    //the contents of the downloaded item
+    private string itemContent;
+    //the name of the last file that was uploaded
     private string lastFileName;
-	//the location of the thumbnail for this upload
-	private string thisUploadsIamgeLoc = "";
-	//list of all fetched subscribed items
-	public List<PublishedFileId_t> subscribedItemList;
+    //the location of the thumbnail for this upload
+    private string thisUploadsIamgeLoc = "";
+    //list of all fetched subscribed items
+    public List<PublishedFileId_t> subscribedItemList;
 	
     void Awake() {
         singleton = this;
@@ -143,14 +142,13 @@ public class SteamWorkshop : MonoBehaviour
         else
         {
             bool upload = UploadFile(fileName, fileData);
-
             if (!upload)
             {
                 Debug.Log("Upload cannot be completed");
             }
             else
             {
-				//pass in the image location of the file to a global variable so that it doesn't have to be passed in again and again
+		//pass in the image location of the file to a global variable so that it doesn't have to be passed in again and again
                 thisUploadsIamgeLoc = imageLoc;
                 UploadToWorkshop(fileName, workshopTitle, workshopDescription, tags);
             }
@@ -180,13 +178,13 @@ public class SteamWorkshop : MonoBehaviour
 
     IEnumerator startPictureUpdate(RemoteStoragePublishFileResult_t pCallback)
     {
-		//Wait 1 second just to make sure initial upload is 100% complete. Although technically entering this Coroutine indicated 100% completion. Consider it a fail safe.
+	//Wait 1 second just to make sure initial upload is 100% complete. Although technically entering this Coroutine indicated 100% completion. Consider it a fail safe.
         yield return new WaitForSeconds(1.0f);
         UGCUpdateHandle_t m_UGCUpdateHandle = SteamUGC.StartItemUpdate(SteamUtils.GetAppID(), pCallback.m_nPublishedFileId);
         bool ret = SteamUGC.SetItemPreview(m_UGCUpdateHandle, thisUploadsIamgeLoc);
         if (ret)
         {
-			Debug.Log("Thumbnail upload intialization success");
+	    Debug.Log("Thumbnail upload intialization success");
             SteamAPICall_t handle = SteamUGC.SubmitItemUpdate(m_UGCUpdateHandle, "Add Screenshot");
             ItemUpdateResult.Set(handle);
         }
@@ -205,7 +203,7 @@ public class SteamWorkshop : MonoBehaviour
     {
         if (pCallback.m_eResult == EResult.k_EResultOK)
         {
-			Debug.Log("File upload success, starting thumbnail upload");
+	    Debug.Log("File upload success, starting thumbnail upload");
             StartCoroutine(startPictureUpdate(pCallback));
             publishedFileID = pCallback.m_nPublishedFileId;
             DeleteFile(lastFileName);           
@@ -218,15 +216,15 @@ public class SteamWorkshop : MonoBehaviour
 
     void OnRemoteStorageEnumerateUserSubscribedFilesResult(RemoteStorageEnumerateUserSubscribedFilesResult_t pCallback, bool bIOFailure)
     {
-		//Clear list from last call
+	//Clear list from last call
         subscribedItemList = new List<PublishedFileId_t>();
         for (int i = 0; i < pCallback.m_nTotalResultCount; i++)
         {
-			//fetch subscribed item and add it to the list
+	    //fetch subscribed item and add it to the list
             PublishedFileId_t f = pCallback.m_rgPublishedFileId[i];
             subscribedItemList.Add(f);
         }
-		//Now that all files have been fetched we need to download them
+	//Now that all files have been fetched we need to download them
         StartCoroutine(downloadFiles());
     }
 
@@ -234,29 +232,29 @@ public class SteamWorkshop : MonoBehaviour
     {
         if (pCallback.m_eResult == EResult.k_EResultOK)
         {
-			//if we were able to get the details of the subscribed item we need to check if we need to update it
+	    //if we were able to get the details of the subscribed item we need to check if we need to update it
             bool overWrite = false;
             if (File.Exists(pCallback.m_pchFileName))
             {
-				Debug.Log("File exists so now we check if it's outdated");
-				//I'm not sure how correct this is for edge cases but it seems to work.
-                uint systemEpoch = (uint)(System.DateTime.UtcNow.Subtract(new System.DateTime(1970, 1, 1))).TotalSeconds;
-				//maybe it's better to save the pCallback.m_rtimeUpdated when the file is first downloaded.
-                if (pCallback.m_rtimeUpdated> systemEpoch)
+		Debug.Log("File exists so now we check if it's outdated");
+		//I'm not sure how correct this is for edge cases but it seems to work.
+                uint file_last_write = (uint)(File.GetLastWriteTimeUtc(pCallback.m_pchFileName).Subtract(new DateTime(1970, 1, 1))).TotalSeconds;
+		//maybe it's better to save the pCallback.m_rtimeUpdated when the file is first downloaded.
+                if (pCallback.m_rtimeUpdated > file_last_write)
                 {
-					//if the file on the workshop is newer then the local file
-					//we need to update
+		    //if the file on the workshop is newer then the local file
+		    //we need to update
                     overWrite = true;
                 }
             }
             else
             {
-				Debug.Log("File doesn't exist we need to download it");
+		Debug.Log("File doesn't exist we need to download it");
                 overWrite = true;
             }
             if (overWrite)
             {
-				//This is where we actually make the callback to download it
+		//This is where we actually make the callback to download it
                 UGCHandle = pCallback.m_hFile;
                 SteamAPICall_t handle = SteamRemoteStorage.UGCDownload(UGCHandle, 0);
                 RemoteStorageDownloadUGCResult.Set(handle);
@@ -269,22 +267,21 @@ public class SteamWorkshop : MonoBehaviour
         }
         else
         {
-			//Unable to get details from the steamworkshop for this file
-			//maybe it doesn't exist any more?
+	    //Unable to get details from the steamworkshop for this file
+	    //maybe it doesn't exist any more?
             fetchedContent = true;
-            
         }
     }
 
     void OnRemoteStorageDownloadUGCResult(RemoteStorageDownloadUGCResult_t pCallback, bool bIOFailure)
     {
-		//finally downloading the file
+	//finally downloading the file
         byte[] Data = new byte[pCallback.m_nSizeInBytes];
         int ret = SteamRemoteStorage.UGCRead(UGCHandle, Data, pCallback.m_nSizeInBytes, 0, EUGCReadAction.k_EUGCRead_Close);
 
         itemContent = System.Text.Encoding.UTF8.GetString(Data, 0, ret);
         File.WriteAllText(pCallback.m_pchFileName, itemContent);
-		//time to continue to the next one.
+	//time to continue to the next one.
         fetchedContent = true;
     }
 }
